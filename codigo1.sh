@@ -1,8 +1,26 @@
 #!/bin/bash
 
-# 1 - IP destino // 2 - archivo
-IpDestino=$1
-Archivo=$2
+# Inicialización de variables
+IpDestino=""
+Archivo=""
+
+# Procesamiento de argumentos
+while [[ $# -gt 0 ]]; do
+    case $1 in
+        --ip)
+            IpDestino="$2"
+            shift 2
+            ;;
+        --archivo)
+            Archivo="$2"
+            shift 2
+            ;;
+        *)
+            echo "Uso: $0 --ip <direccion_ip> --archivo <ruta_archivo>"
+            exit 1
+            ;;
+    esac
+done
 
 #Selector de clave publica
 case "$direccion_ip" in
