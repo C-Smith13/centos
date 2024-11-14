@@ -49,5 +49,5 @@ write-host "Archivo comprimido como ZIP."
 
 # --- 5. Enviar archivo a través de SCP ---
 write-host "Enviando archivo comprimido a traves de SCP..."
-scp -i "C:\Users\froja\.ssh\id_rsa" "$zipFile" $user@$IpDestino:"$rutaDestino/"
+scp -i "C:\Users\froja\.ssh\id_rsa" "$zipFile" ${user}@${IpDestino}:"$rutaDestino/"
 write-host "Archivo enviado con exito."
