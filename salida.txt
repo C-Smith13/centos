@@ -1,13 +1,29 @@
+Codificando archivo en Base64...
+Input Length = 32
+EncodeToFile returned The file exists. 0x80070050 (WIN32: 80 ERROR_FILE_EXISTS)
+CertUtil: -encode command FAILED: 0x80070050 (WIN32: 80 ERROR_FILE_EXISTS)
+CertUtil: The file exists.
+Cifrando archivo con la clave publica...
+openssl : The term 'openssl' is not recognized as the name of a cmdlet, function, script file, or operable program. Check
+the spelling of the name, or if a path was included, verify that the path is correct and try again.
+At C:\Users\Administrator\Desktop\clave\ScriptWC.ps1:30 char:1
++ openssl pkeyutl -encrypt -inkey "$rutaPubKey" -pubin -in "$Archivo" - ...
++ ~~~~~~~
+    + CategoryInfo          : ObjectNotFound: (openssl:String) [], CommandNotFoundException
+    + FullyQualifiedErrorId : CommandNotFoundException
 
-Security warning
-Run only scripts that you trust. While scripts from the internet can be useful, this script can potentially harm your
-computer. If you trust this script, use the Unblock-File cmdlet to allow the script to run without this warning message. Do
-you want to run C:\Users\Administrator\Desktop\clave\ScriptWC.ps1?
-[D] Do not run  [R] Run once  [S] Suspend  [?] Help (default is "D"): r
-At C:\Users\Administrator\Desktop\clave\ScriptWC.ps1:52 char:54
-+ ...  -i "C:\Users\froja\.ssh\id_rsa" "$zipFile" $user@$IpDestino:"$rutaDe ...
-+                                                       ~~~~~~~~~~~
-Variable reference is not valid. ':' was not followed by a valid variable name character. Consider using ${} to delimit the
-name.
-    + CategoryInfo          : ParserError: (:) [], ParseException
-    + FullyQualifiedErrorId : InvalidVariableReferenceWithDrive
+Archivo cifrado con clave publica.
+Calculando hash MD5 del archivo original...
+Hash MD5 calculado y guardado.
+Comprimiendo archivo en formato ZIP...
+Compress-Archive : The path '\pruebawc.enc' either does not exist or is not a valid file system path.
+At C:\Users\Administrator\Desktop\clave\ScriptWC.ps1:42 char:1
++ Compress-Archive -Path "$encFile", "$hashFile", "$base64File" -Destin ...
++ ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+    + CategoryInfo          : InvalidArgument: (\pruebawc.enc:String) [Compress-Archive], InvalidOperationException
+    + FullyQualifiedErrorId : ArchiveCmdletPathNotFound,Compress-Archive
+
+Archivo comprimido como ZIP.
+Enviando archivo comprimido a traves de SCP...
+/pruebawc.zip: No such file or directory
+Archivo enviado con exito.
