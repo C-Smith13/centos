@@ -27,3 +27,5 @@ Archivo comprimido como ZIP.
 Enviando archivo comprimido a traves de SCP...
 /pruebawc.zip: No such file or directory
 Archivo enviado con exito.
+Borrando Temporales
+Temporales Borrados
