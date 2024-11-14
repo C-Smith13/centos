@@ -1,14 +1,12 @@
-
-Windows a Centos
 # Inicialización de variables
 param (
     [string]$IpDestino,
     [string]$Archivo
 )
 
-$cloud_user = "usuario"  # Definir usuario para la conexión SFTP
-$rutaPrivKey = "C:\ruta\a\tu\clave_privada.ppk"  # Ruta a la clave privada
-$rutaPubKey = "C:\ruta\a\tu\clave_publica.pem"   # Ruta a la clave pública
+$user = "cloud-user"  # Definir usuario para la conexión SFTP
+$rutaPrivKey = "C:\Users\Administrator\Desktop\clave\Win1"  # Ruta a la clave privada
+$rutaPubKey = "C:\Users\Administrator\Desktop\clave\Win1.pem"   # Ruta a la clave pública
 $rutaDestino = "/home/cloud-user/envios"          # Ruta en el servidor remoto
 
 # Validación de argumentos
@@ -17,62 +15,39 @@ if (-not $IpDestino -or -not $Archivo) {
     exit 1
 }
 
-# Codificación Base64
-Write-Host "Codificando archivo en Base64..."
-$base64File = "${Archivo}.b64"
-[System.Convert]::ToBase64String([System.IO.File]::ReadAllBytes($Archivo)) | Out-File -Encoding ASCII $base64File
-Write-Host "Base64 terminado: $base64File"
+# Obtención del directorio y nombre del archivo sin extensión
+$baseName = [System.IO.Path]::GetFileNameWithoutExtension($Archivo)
+$directory = [System.IO.Path]::GetDirectoryName($Archivo)
 
-# Cifrado OpenSSL (requiere OpenSSL instalado)
-Write-Host "Cifrando archivo con OpenSSL..."
-$encFile = "${Archivo}.enc"
-& openssl pkeyutl -encrypt -inkey $rutaPubKey -pubin -in $Archivo -out $encFile
-Write-Host "OpenSSL terminado: $encFile"
+# --- 1. Codificacion en Base64 ---
+$base64File = "$directory\$baseName.b64"
+write-host "Codificando archivo en Base64..."
+certutil -encode "$Archivo" "$base64File"
 
-# Cálculo de hash MD5
-$md5_hash = Get-FileHash -Path $Archivo -Algorithm MD5 | Select-Object -ExpandProperty Hash
-Write-Host "MD5 hash del archivo cifrado: $md5_hash"
-$hashFile = "${Archivo}.hash"
-Set-Content -Path $hashFile -Value $md5_hash
+# --- 2. Cifrado con OpenSSL (creando clave publica y privada) ---
+write-host "Generando claves publica y privada con OpenSSL..."
+openssl genpkey -algorithm RSA -out "$rutaPrivKey" -pkeyopt rsa_keygen_bits:2048
+openssl rsa -pubout -in "$rutaPrivKey" -out "$directory\public_key.pem"
+write-host "Claves generadas y almacenadas."
 
-# Compresión ZIP
-Write-Host "Compresión ZIP..."
-$zipFile = "${Archivo}.zip"
-Compress-Archive -Path @($base64File, $Archivo, $hashFile, $encFile) -DestinationPath $zipFile
-Write-Host "ZIP terminado: $zipFile"
+$encFile = "$directory\$baseName.enc"
+write-host "Cifrando archivo con la clave publica..." 
+openssl pkeyutl -encrypt -inkey "$directory\public_key.pem" -pubin -in "$Archivo" -out "$encFile"
+write-host "Archivo cifrado con clave publica."
 
-# Enviar el archivo usando SFTP con clave privada (requiere WinSCP)
-Add-Type -AssemblyName WinSCPnet
+# --- 3. Hash MD5 del archivo original ---
+$hashFile = "$directory\$baseName.hash"
+write-host "Calculando hash MD5 del archivo original..."
+certutil -hashfile "$Archivo" MD5 > "$hashFile"
+write-host "Hash MD5 calculado y guardado."
 
-$sessionOptions = New-Object WinSCP.SessionOptions -Property @{
-    Protocol = [WinSCP.Protocol]::Sftp
-    HostName = $IpDestino
-    UserName = $cloud_user
-    SshPrivateKeyPath = $rutaPrivKey
-}
+#--- 4. Comprimir el archivo como .zip ---
+$zipFile = "$directory\$baseName.zip"
+write-host "Comprimiendo archivo en formato ZIP..."
+Compress-Archive -Path "$encFile", "$hashFile", "$base64File" -DestinationPath "$zipFile"
+write-host "Archivo comprimido como ZIP."
 
-$session = New-Object WinSCP.Session
-try {
-    Write-Host "Conectando al servidor SFTP..."
-    $session.Open($sessionOptions)
-
-    Write-Host "Enviando archivo a: $rutaDestino"
-    $transferOptions = New-Object WinSCP.TransferOptions
-    $transferOptions.TransferMode = [WinSCP.TransferMode]::Binary
-
-    $transferOperationResult = $session.PutFiles($zipFile, "$rutaDestino/", $False, $transferOptions)
-
-    if ($transferOperationResult.IsSuccess) {
-        Write-Host "Archivo enviado exitosamente a: $rutaDestino."
-    } else {
-        Write-Host "Error al enviar el archivo."
-        foreach ($error in $transferOperationResult.Failures) {
-            Write-Host "Error: $($error.Message)"
-        }
-    }
-} catch {
-    Write-Host "Se produjo un error: $_"
-} finally {
-    # Cerrar sesión
-    $session.Dispose()
-}
+# --- 5. Enviar archivo a través de SCP ---
+write-host "Enviando archivo comprimido a traves de SCP..."
+scp -i "C:\Users\froja\.ssh\id_rsa" "$zipFile" $user@$IpDestino:"$rutaDestino/"
+write-host "Archivo enviado con exito."
